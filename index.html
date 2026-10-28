@@ -146,9 +146,10 @@
                     <span class="text-[10px] text-rose-500 font-bold hidden leading-tight" id="lotCappedNotice">※最大レバ制限適用中</span>
                 </div>
                 <div class="flex flex-col items-end">
-                    <div class="flex items-baseline gap-1 text-sky-600" id="lotContainer">
-                        <span class="text-2xl tracking-wider transition-colors duration-200" id="lotResult">13.53</span>
-                        <span class="text-base font-semibold">lot</span>
+                    <div class="flex items-baseline gap-0.5 text-sky-600" id="lotContainer">
+                        <span class="text-3xl font-extrabold tracking-tight transition-colors duration-200" id="lotInteger">13</span>
+                        <span class="text-base font-bold transition-colors duration-200" id="lotDecimal">.53</span>
+                        <span class="text-base font-semibold ml-1">lot</span>
                     </div>
                     <span class="text-xs font-semibold text-sky-600/80 hidden mt-0.5" id="lotSplitNotice">(70.00lot × 2)</span>
                 </div>
@@ -200,7 +201,8 @@
         const maxLeverageInput = document.getElementById('maxLeverage');
         const basePriceDisplay = document.getElementById('basePriceDisplay');
         const updatedTimeDisplay = document.getElementById('updatedTimeDisplay');
-        const lotResult = document.getElementById('lotResult');
+        const lotInteger = document.getElementById('lotInteger');
+        const lotDecimal = document.getElementById('lotDecimal');
         const lotContainer = document.getElementById('lotContainer');
         const lotSplitNotice = document.getElementById('lotSplitNotice');
         const lotCappedNotice = document.getElementById('lotCappedNotice');
@@ -308,11 +310,12 @@
             const maxLev = parseFloat(maxLeverageInput.value) || 0;
 
             if (pips <= 0 || riskPct <= 0 || balance <= 0) {
-                lotResult.textContent = "0.00";
+                lotInteger.textContent = "0";
+                lotDecimal.textContent = ".00";
                 leverageResult.textContent = "0.00";
                 lossResult.textContent = "0";
                 leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
-                lotContainer.className = "flex items-baseline gap-1 text-sky-600";
+                lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
                 leverageWarning.classList.add('hidden');
                 if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
                 if (lotSplitNotice) lotSplitNotice.classList.add('hidden');
@@ -359,8 +362,12 @@
             // Calculate actual loss in JPY for final lot
             const actualLossJPY = finalLot * pips * pipValuePerLotInJPY;
 
-            // Display Results
-            lotResult.textContent = finalLot.toFixed(2);
+            // Display Results (Split Integer and Decimal)
+            const lotFormatted = finalLot.toFixed(2);
+            const lotParts = lotFormatted.split('.');
+            lotInteger.textContent = lotParts[0];
+            lotDecimal.textContent = '.' + (lotParts[1] || '00');
+
             leverageResult.textContent = finalLeverage.toFixed(2);
             lossResult.textContent = formatNumber(actualLossJPY);
 
@@ -377,12 +384,12 @@
             // Update UI for Leverage Warning & Lot Capping
             if (isCapped) {
                 leverageContainer.className = "flex items-baseline gap-1 text-rose-500";
-                lotContainer.className = "flex items-baseline gap-1 text-rose-500";
+                lotContainer.className = "flex items-baseline gap-0.5 text-rose-500";
                 leverageWarning.classList.remove('hidden');
                 if (lotCappedNotice) lotCappedNotice.classList.remove('hidden');
             } else {
                 leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
-                lotContainer.className = "flex items-baseline gap-1 text-sky-600";
+                lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
                 leverageWarning.classList.add('hidden');
                 if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
             }
