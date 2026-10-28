@@ -105,10 +105,18 @@
         <!-- Live Price & Timestamp Info -->
         <div class="w-full grid grid-cols-2 gap-4 mb-4">
             <div class="flex flex-col items-center">
-                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">通貨ペア価格</label>
-                <div class="w-full h-12 blue-border-box rounded-xl flex items-center justify-center font-bold text-lg">
-                    <span id="basePriceDisplay">152.40</span>
-                    <span id="loadingSpinner" class="hidden ml-2 border-2 border-sky-500 border-t-transparent rounded-full w-4 h-4 animate-spin"></span>
+                <div class="flex items-center gap-1 mb-1.5">
+                    <label class="text-xs sm:text-sm font-bold text-sky-700">通貨ペア価格</label>
+                    <button id="refreshRateBtn" title="価格を更新" class="text-sky-500 hover:text-sky-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="w-full h-12 blue-border-box rounded-xl flex items-center justify-center font-bold text-lg relative px-2">
+                    <input type="number" id="basePriceInput" value="152.400" step="any"
+                        class="w-full text-center bg-transparent border-none outline-none font-bold text-lg text-sky-800 focus:ring-0">
+                    <span id="loadingSpinner" class="hidden absolute right-2 border-2 border-sky-500 border-t-transparent rounded-full w-4 h-4 animate-spin"></span>
                 </div>
             </div>
             <div class="flex flex-col items-center">
@@ -199,7 +207,8 @@
         const riskPercentInput = document.getElementById('riskPercent');
         const balanceInput = document.getElementById('accountBalance');
         const maxLeverageInput = document.getElementById('maxLeverage');
-        const basePriceDisplay = document.getElementById('basePriceDisplay');
+        const basePriceInput = document.getElementById('basePriceInput');
+        const refreshRateBtn = document.getElementById('refreshRateBtn');
         const updatedTimeDisplay = document.getElementById('updatedTimeDisplay');
         const lotInteger = document.getElementById('lotInteger');
         const lotDecimal = document.getElementById('lotDecimal');
@@ -220,11 +229,11 @@
 
         // Cache rates
         const ratesCache = {
-            'USD/JPY': 152.40,
-            'EUR/USD': 1.0850,
-            'GBP/USD': 1.2980,
-            'AUD/USD': 0.6580,
-            'usdjpy_rate': 152.40
+            'USD/JPY': 152.400,
+            'EUR/USD': 1.08500,
+            'GBP/USD': 1.29800,
+            'AUD/USD': 0.65800,
+            'usdjpy_rate': 152.400
         };
 
         // Format number with commas
@@ -246,14 +255,15 @@
             }
         });
 
+        // Format Account balance on focus in (remove commas for editing)
         balanceInput.addEventListener('focus', () => {
             const raw = parseFormattedNumber(balanceInput.value);
             if (raw > 0) {
-                balanceInput.value = raw;
+                balanceInput.value = raw.toString();
             }
         });
 
-        // Format Date Time
+        // Get Formatted Current Date Time String (YYYY/MM/DD HH:MM)
         function getFormattedDateTime() {
             const now = new Date();
             const year = now.getFullYear();
@@ -264,53 +274,83 @@
             return `${year}/${month}/${day} ${hours}:${minutes}`;
         }
 
-        // Fetch Live Rates via public API (with fallbacks)
+        // Fetch Live Rates via public API (with fallbacks & timeout)
         async function fetchCurrencyRate(pair) {
             loadingSpinner.classList.remove('hidden');
             
-            // Define exchange rate fetching sources
-            const fetchSources = [
+            const fetchWithTimeout = async (url, timeout = 3000) => {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), timeout);
+                try {
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(id);
+                    return response;
+                } catch (e) {
+                    clearTimeout(id);
+                    throw e;
+                }
+            };
+
+            const apis = [
+                // Source 1: ExchangeRate API (v4)
                 async () => {
-                    const res = await fetch('https://open.er-api.com/v6/latest/USD');
-                    if (!res.ok) throw new Error('API 1 failed');
+                    const res = await fetchWithTimeout('https://api.exchangerate-api.com/v4/latest/USD');
+                    if (!res.ok) throw new Error();
                     const data = await res.json();
-                    return data && data.rates ? data.rates : null;
+                    return {
+                        USDJPY: data.rates.JPY,
+                        EURUSD: 1 / data.rates.EUR,
+                        GBPUSD: 1 / data.rates.GBP,
+                        AUDUSD: 1 / data.rates.AUD
+                    };
                 },
+                // Source 2: Frankfurter API
                 async () => {
-                    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-                    if (!res.ok) throw new Error('API 2 failed');
+                    const res = await fetchWithTimeout('https://api.frankfurter.app/latest?from=USD');
+                    if (!res.ok) throw new Error();
                     const data = await res.json();
-                    return data && data.rates ? data.rates : null;
+                    return {
+                        USDJPY: data.rates.JPY,
+                        EURUSD: 1 / data.rates.EUR,
+                        GBPUSD: 1 / data.rates.GBP,
+                        AUDUSD: 1 / data.rates.AUD
+                    };
+                },
+                // Source 3: Open ER API
+                async () => {
+                    const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD');
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    return {
+                        USDJPY: data.rates.JPY,
+                        EURUSD: 1 / data.rates.EUR,
+                        GBPUSD: 1 / data.rates.GBP,
+                        AUDUSD: 1 / data.rates.AUD
+                    };
                 }
             ];
 
-            let rates = null;
-            for (const fetchRates of fetchSources) {
+            let ratesFound = null;
+            for (const apiCall of apis) {
                 try {
-                    rates = await fetchRates();
-                    if (rates) break;
-                } catch (e) {
-                    console.warn('Rate fetch error, trying next source...', e);
-                }
+                    ratesFound = await apiCall();
+                    if (ratesFound && ratesFound.USDJPY) break;
+                } catch (e) {}
             }
 
-            if (rates) {
-                const usdjpy = rates.JPY || rates.jpy || 152.40;
-                ratesCache['usdjpy_rate'] = usdjpy;
-                ratesCache['USD/JPY'] = usdjpy;
+            if (ratesFound) {
+                ratesCache['usdjpy_rate'] = ratesFound.USDJPY;
+                ratesCache['USD/JPY'] = ratesFound.USDJPY;
+                ratesCache['EUR/USD'] = ratesFound.EURUSD;
+                ratesCache['GBP/USD'] = ratesFound.GBPUSD;
+                ratesCache['AUD/USD'] = ratesFound.AUDUSD;
 
-                if (rates.EUR) ratesCache['EUR/USD'] = 1 / rates.EUR;
-                if (rates.GBP) ratesCache['GBP/USD'] = 1 / rates.GBP;
-                if (rates.AUD) ratesCache['AUD/USD'] = 1 / rates.AUD;
-            } else {
-                console.log('Using default cached fallback rates');
+                const currentRate = ratesCache[pair] || 1.0;
+                const decimals = pair === 'USD/JPY' ? 3 : 5;
+                basePriceInput.value = currentRate.toFixed(decimals);
+                updatedTimeDisplay.textContent = getFormattedDateTime();
             }
 
-            // Update UI with retrieved or fallback rates
-            const currentRate = ratesCache[pair] || 1.0;
-            const decimals = pair === 'USD/JPY' ? 3 : 5;
-            basePriceDisplay.textContent = currentRate.toFixed(decimals);
-            updatedTimeDisplay.textContent = getFormattedDateTime();
             loadingSpinner.classList.add('hidden');
             calculateLot();
         }
@@ -321,8 +361,9 @@
             const riskPct = parseFloat(riskPercentInput.value) || 0;
             const balance = parseFormattedNumber(balanceInput.value);
             const maxLev = parseFloat(maxLeverageInput.value) || 0;
+            const currentPrice = parseFloat(basePriceInput.value) || ratesCache[selectedPair] || 1.0;
 
-            if (pips <= 0 || riskPct <= 0 || balance <= 0) {
+            if (pips <= 0 || riskPct <= 0 || balance <= 0 || currentPrice <= 0) {
                 lotInteger.textContent = "0";
                 lotDecimal.textContent = ".00";
                 leverageResult.textContent = "0.00";
@@ -335,18 +376,19 @@
                 return;
             }
 
-            const usdjpyRate = ratesCache['usdjpy_rate'] || 152.40;
-            const pairRate = ratesCache[selectedPair] || 1.0;
+            // Update cache from input
+            ratesCache[selectedPair] = currentPrice;
+            const usdjpyRate = selectedPair === 'USD/JPY' ? currentPrice : (ratesCache['usdjpy_rate'] || 152.40);
 
             let pipValuePerLotInJPY = 100; // JPY pair (0.01 * 10,000 = 100 JPY)
-            let notionalValuePerLotInJPY = 10000 * pairRate; // Total JPY value for 1 Lot
+            let notionalValuePerLotInJPY = 10000 * currentPrice; // Total JPY value for 1 Lot
 
             if (selectedPair === 'USD/JPY') {
                 pipValuePerLotInJPY = 100;
-                notionalValuePerLotInJPY = 10000 * pairRate;
+                notionalValuePerLotInJPY = 10000 * currentPrice;
             } else {
                 pipValuePerLotInJPY = 1 * usdjpyRate;
-                notionalValuePerLotInJPY = 10000 * pairRate * usdjpyRate;
+                notionalValuePerLotInJPY = 10000 * currentPrice * usdjpyRate;
             }
 
             // Risk-based raw lot calculation
@@ -419,6 +461,8 @@
         riskPercentInput.addEventListener('input', calculateLot);
         balanceInput.addEventListener('input', calculateLot);
         maxLeverageInput.addEventListener('input', calculateLot);
+        basePriceInput.addEventListener('input', calculateLot);
+        refreshRateBtn.addEventListener('click', () => fetchCurrencyRate(selectedPair));
 
         // Help Modal Events
         helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
