@@ -253,7 +253,7 @@
             }
         });
 
-        // Current Date Formatter
+        // Format Date Time
         function getFormattedDateTime() {
             const now = new Date();
             const year = now.getFullYear();
@@ -264,41 +264,54 @@
             return `${year}/${month}/${day} ${hours}:${minutes}`;
         }
 
-        // Fetch Live Rates via public API
+        // Fetch Live Rates via public API (with fallbacks)
         async function fetchCurrencyRate(pair) {
             loadingSpinner.classList.remove('hidden');
-            try {
-                const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
-                if (res.ok) {
+            
+            // Define exchange rate fetching sources
+            const fetchSources = [
+                async () => {
+                    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                    if (!res.ok) throw new Error('API 1 failed');
                     const data = await res.json();
-                    if (data && data.rates) {
-                        const usdjpy = data.rates.JPY || 152.40;
-                        ratesCache['usdjpy_rate'] = usdjpy;
-                        ratesCache['USD/JPY'] = usdjpy;
-
-                        if (data.rates.EUR) ratesCache['EUR/USD'] = 1 / data.rates.EUR;
-                        if (data.rates.GBP) ratesCache['GBP/USD'] = 1 / data.rates.GBP;
-                        if (data.rates.AUD) ratesCache['AUD/USD'] = 1 / data.rates.AUD;
-
-                        const currentRate = ratesCache[pair] || 1.0;
-                        const decimals = pair === 'USD/JPY' ? 2 : 4;
-                        basePriceDisplay.textContent = currentRate.toFixed(decimals);
-                        updatedTimeDisplay.textContent = getFormattedDateTime();
-                        loadingSpinner.classList.add('hidden');
-                        calculateLot();
-                        return;
-                    }
+                    return data && data.rates ? data.rates : null;
+                },
+                async () => {
+                    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                    if (!res.ok) throw new Error('API 2 failed');
+                    const data = await res.json();
+                    return data && data.rates ? data.rates : null;
                 }
-            } catch (e) {
-                console.log('Falling back to default cached rates', e);
+            ];
+
+            let rates = null;
+            for (const fetchRates of fetchSources) {
+                try {
+                    rates = await fetchRates();
+                    if (rates) break;
+                } catch (e) {
+                    console.warn('Rate fetch error, trying next source...', e);
+                }
             }
 
-            // Fallback
-            loadingSpinner.classList.add('hidden');
+            if (rates) {
+                const usdjpy = rates.JPY || rates.jpy || 152.40;
+                ratesCache['usdjpy_rate'] = usdjpy;
+                ratesCache['USD/JPY'] = usdjpy;
+
+                if (rates.EUR) ratesCache['EUR/USD'] = 1 / rates.EUR;
+                if (rates.GBP) ratesCache['GBP/USD'] = 1 / rates.GBP;
+                if (rates.AUD) ratesCache['AUD/USD'] = 1 / rates.AUD;
+            } else {
+                console.log('Using default cached fallback rates');
+            }
+
+            // Update UI with retrieved or fallback rates
             const currentRate = ratesCache[pair] || 1.0;
-            const decimals = pair === 'USD/JPY' ? 2 : 4;
+            const decimals = pair === 'USD/JPY' ? 3 : 5;
             basePriceDisplay.textContent = currentRate.toFixed(decimals);
             updatedTimeDisplay.textContent = getFormattedDateTime();
+            loadingSpinner.classList.add('hidden');
             calculateLot();
         }
 
