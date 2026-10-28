@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FX ロット計算</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        appBg: '#222831',
+                        bluePrimary: '#38BDF8',
+                        bluePrimaryHover: '#0EA5E9',
+                        darkText: '#0F172A',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FFFFFF;
+            color: #0284C7;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .blue-box {
+            background-color: #E0F2FE;
+            color: #0369A1;
+            border: 1px solid #BAE6FD;
+        }
+        .blue-border-box {
+            border: 2px solid #38BDF8;
+            background-color: #F0F9FF;
+            color: #0369A1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 antialiased bg-white">
+
+    <!-- App Main Container -->
+    <div class="w-full max-w-sm bg-white flex flex-col items-center justify-between min-h-[95vh] py-6 px-4 rounded-3xl relative border border-slate-200 shadow-xl">
+        
+        <!-- Top Header -->
+        <div class="w-full text-center relative mb-4">
+            <!-- HELP Button (Moved to Top-Left) -->
+            <button id="helpBtn" class="absolute left-0 top-0 border-2 border-sky-500 text-sky-600 bg-sky-50 rounded-full w-12 h-12 flex items-center justify-center text-xs font-bold hover:bg-sky-500 hover:text-white transition duration-200">
+                HELP
+            </button>
+
+            <h1 class="text-3xl font-extrabold tracking-tight text-sky-600">FX</h1>
+            <p class="text-xl font-bold tracking-wide text-sky-600">ロット計算</p>
+        </div>
+
+        <!-- Inputs Row 1: Stop Loss & Risk % -->
+        <div class="w-full grid grid-cols-2 gap-4 mb-4">
+            <div class="flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">ストップ幅 (pips)</label>
+                <input type="number" id="stopLoss" value="20" step="any"
+                    class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
+            </div>
+            <div class="flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">リスク%</label>
+                <input type="number" id="riskPercent" value="2.00" step="0.01"
+                    class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
+            </div>
+        </div>
+
+        <!-- Inputs Row 2: Account Balance & Max Leverage -->
+        <div class="w-full grid grid-cols-3 gap-3 mb-5">
+            <div class="col-span-2 flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">証拠金 (円)</label>
+                <input type="text" id="accountBalance" value="1,000,000"
+                    class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
+            </div>
+            <div class="flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">最大レバ</label>
+                <input type="number" id="maxLeverage" value="25" step="1" min="1"
+                    class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
+            </div>
+        </div>
+
+        <!-- Live Price & Timestamp Info -->
+        <div class="w-full grid grid-cols-2 gap-4 mb-4">
+            <div class="flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">通貨ペア価格</label>
+                <div class="w-full h-12 blue-border-box rounded-xl flex items-center justify-center font-bold text-lg">
+                    <span id="basePriceDisplay">152.40</span>
+                    <span id="loadingSpinner" class="hidden ml-2 border-2 border-sky-500 border-t-transparent rounded-full w-4 h-4 animate-spin"></span>
+                </div>
+            </div>
+            <div class="flex flex-col items-center">
+                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">更新日時</label>
+                <div class="w-full h-12 blue-border-box rounded-xl flex items-center justify-center font-medium text-xs sm:text-sm px-1 text-center" id="updatedTimeDisplay">
+                    2026/10/28 08:44
+                </div>
+            </div>
+        </div>
+
+        <!-- Currency Pair Dropdown Selector -->
+        <div class="w-full my-2 flex flex-col items-center">
+            <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">通貨ペア選択</label>
+            <div class="relative w-full">
+                <select id="currencySelect" class="w-full h-12 blue-box rounded-xl px-4 text-center font-extrabold text-xl appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-sky-400 transition">
+                    <option value="USD/JPY" class="bg-white text-sky-700 font-bold">USD/JPY</option>
+                    <option value="EUR/USD" class="bg-white text-sky-700 font-bold">EUR/USD</option>
+                    <option value="GBP/USD" class="bg-white text-sky-700 font-bold">GBP/USD</option>
+                    <option value="AUD/USD" class="bg-white text-sky-700 font-bold">AUD/USD</option>
+                </select>
+                <!-- Custom Dropdown Arrow -->
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-sky-700">
+                    <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Display Section -->
+        <div class="w-full px-2 space-y-3 my-4">
+            <div class="flex justify-between items-center text-xl font-bold">
+                <div class="flex flex-col">
+                    <span class="text-sky-700">ロット数</span>
+                    <span class="text-[10px] text-rose-500 font-bold hidden leading-tight" id="lotCappedNotice">※最大レバ制限適用中</span>
+                </div>
+                <div class="flex flex-col items-end">
+                    <div class="flex items-baseline gap-1 text-sky-600" id="lotContainer">
+                        <span class="text-2xl tracking-wider transition-colors duration-200" id="lotResult">13.53</span>
+                        <span class="text-base font-semibold">lot</span>
+                    </div>
+                    <span class="text-xs font-semibold text-sky-600/80 hidden mt-0.5" id="lotSplitNotice">(70.00lot × 2)</span>
+                </div>
+            </div>
+            <div class="flex justify-between items-center text-xl font-bold">
+                <span class="text-sky-700">レバレッジ</span>
+                <div class="flex flex-col items-end">
+                    <div class="flex items-baseline gap-1 text-sky-600" id="leverageContainer">
+                        <span class="text-2xl tracking-wider transition-colors duration-200" id="leverageResult">0.00</span>
+                        <span class="text-base font-semibold">倍</span>
+                    </div>
+                    <span class="text-xs text-rose-500 font-bold hidden" id="leverageWarning">⚠️ 最大レバに制限中</span>
+                </div>
+            </div>
+            <div class="flex justify-between items-center text-xl font-bold">
+                <span class="text-sky-700">損失</span>
+                <div class="flex items-baseline gap-1 text-sky-600">
+                    <span class="text-2xl tracking-wider transition-colors duration-200" id="lossResult">541,199</span>
+                    <span class="text-base font-semibold">円</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 hidden backdrop-blur-sm">
+        <div class="bg-white border-2 border-sky-400 rounded-2xl p-6 max-w-sm w-full text-slate-800 space-y-4 shadow-2xl">
+            <h2 class="text-xl font-bold border-b border-sky-200 pb-2 text-sky-700">ロット計算について</h2>
+            <div class="text-sm leading-relaxed space-y-2 text-slate-600">
+                <p><strong>【計算仕様（1ロット = 10,000通貨）】</strong></p>
+                <p><strong>・損失許容額（円）:</strong><br> 証拠金 × (リスク% ÷ 100)</p>
+                <p><strong>・1pipあたりの価値（1ロット）:</strong><br>
+                - USD/JPY: 100円 (0.01 × 10,000)<br>
+                - XXX/USD: 1 USD × USD/JPYレート (0.0001 × 10,000 × 円換算レート)</p>
+                <p><strong>・ロット数算出:</strong><br> 許容損失額 ÷ (ストップ幅pips × 1pip価値)</p>
+            </div>
+            <button id="closeHelpBtn" class="w-full py-2.5 bg-sky-500 text-white font-bold rounded-xl mt-4 hover:bg-sky-600 transition">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const stopLossInput = document.getElementById('stopLoss');
+        const riskPercentInput = document.getElementById('riskPercent');
+        const balanceInput = document.getElementById('accountBalance');
+        const maxLeverageInput = document.getElementById('maxLeverage');
+        const basePriceDisplay = document.getElementById('basePriceDisplay');
+        const updatedTimeDisplay = document.getElementById('updatedTimeDisplay');
+        const lotResult = document.getElementById('lotResult');
+        const lotContainer = document.getElementById('lotContainer');
+        const lotSplitNotice = document.getElementById('lotSplitNotice');
+        const lotCappedNotice = document.getElementById('lotCappedNotice');
+        const leverageResult = document.getElementById('leverageResult');
+        const leverageWarning = document.getElementById('leverageWarning');
+        const lossResult = document.getElementById('lossResult');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+        // Currency dropdown element
+        const currencySelect = document.getElementById('currencySelect');
+        let selectedPair = 'USD/JPY';
+
+        // Cache rates
+        const ratesCache = {
+            'USD/JPY': 152.40,
+            'EUR/USD': 1.0850,
+            'GBP/USD': 1.2980,
+            'AUD/USD': 0.6580,
+            'usdjpy_rate': 152.40
+        };
+
+        // Format number with commas
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString('en-US');
+        }
+
+        // Clean input number from formatted string
+        function parseFormattedNumber(val) {
+            if (!val) return 0;
+            return parseFloat(val.toString().replace(/,/g, '')) || 0;
+        }
+
+        // Format Account balance on focus out
+        balanceInput.addEventListener('blur', () => {
+            const raw = parseFormattedNumber(balanceInput.value);
+            if (raw > 0) {
+                balanceInput.value = formatNumber(raw);
+            }
+        });
+
+        balanceInput.addEventListener('focus', () => {
+            const raw = parseFormattedNumber(balanceInput.value);
+            if (raw > 0) {
+                balanceInput.value = raw;
+            }
+        });
+
+        // Current Date Formatter
+        function getFormattedDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}/${month}/${day} ${hours}:${minutes}`;
+        }
+
+        // Fetch Live Rates via public API
+        async function fetchCurrencyRate(pair) {
+            loadingSpinner.classList.remove('hidden');
+            try {
+                const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.rates) {
+                        const usdjpy = data.rates.JPY || 152.40;
+                        ratesCache['usdjpy_rate'] = usdjpy;
+                        ratesCache['USD/JPY'] = usdjpy;
+
+                        if (data.rates.EUR) ratesCache['EUR/USD'] = 1 / data.rates.EUR;
+                        if (data.rates.GBP) ratesCache['GBP/USD'] = 1 / data.rates.GBP;
+                        if (data.rates.AUD) ratesCache['AUD/USD'] = 1 / data.rates.AUD;
+
+                        const currentRate = ratesCache[pair] || 1.0;
+                        const decimals = pair === 'USD/JPY' ? 2 : 4;
+                        basePriceDisplay.textContent = currentRate.toFixed(decimals);
+                        updatedTimeDisplay.textContent = getFormattedDateTime();
+                        loadingSpinner.classList.add('hidden');
+                        calculateLot();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('Falling back to default cached rates', e);
+            }
+
+            // Fallback
+            loadingSpinner.classList.add('hidden');
+            const currentRate = ratesCache[pair] || 1.0;
+            const decimals = pair === 'USD/JPY' ? 2 : 4;
+            basePriceDisplay.textContent = currentRate.toFixed(decimals);
+            updatedTimeDisplay.textContent = getFormattedDateTime();
+            calculateLot();
+        }
+
+        // Lot Calculation Logic (1 Lot = 10,000 units)
+        function calculateLot() {
+            const pips = parseFloat(stopLossInput.value) || 0;
+            const riskPct = parseFloat(riskPercentInput.value) || 0;
+            const balance = parseFormattedNumber(balanceInput.value);
+            const maxLev = parseFloat(maxLeverageInput.value) || 0;
+
+            if (pips <= 0 || riskPct <= 0 || balance <= 0) {
+                lotResult.textContent = "0.00";
+                leverageResult.textContent = "0.00";
+                lossResult.textContent = "0";
+                leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
+                lotContainer.className = "flex items-baseline gap-1 text-sky-600";
+                leverageWarning.classList.add('hidden');
+                if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
+                if (lotSplitNotice) lotSplitNotice.classList.add('hidden');
+                return;
+            }
+
+            const usdjpyRate = ratesCache['usdjpy_rate'] || 152.40;
+            const pairRate = ratesCache[selectedPair] || 1.0;
+
+            let pipValuePerLotInJPY = 100; // JPY pair (0.01 * 10,000 = 100 JPY)
+            let notionalValuePerLotInJPY = 10000 * pairRate; // Total JPY value for 1 Lot
+
+            if (selectedPair === 'USD/JPY') {
+                pipValuePerLotInJPY = 100;
+                notionalValuePerLotInJPY = 10000 * pairRate;
+            } else {
+                pipValuePerLotInJPY = 1 * usdjpyRate;
+                notionalValuePerLotInJPY = 10000 * pairRate * usdjpyRate;
+            }
+
+            // Risk-based raw lot calculation
+            const riskAmountJPY = balance * (riskPct / 100);
+            let rawLot = riskAmountJPY / (pips * pipValuePerLotInJPY);
+
+            // Calculate max allowed lot size based on Maximum Leverage
+            let maxAllowedLot = Infinity;
+            if (maxLev > 0) {
+                maxAllowedLot = (balance * maxLev) / notionalValuePerLotInJPY;
+            }
+
+            let isCapped = false;
+            let finalLot = rawLot;
+
+            // Cap the lot size if it exceeds the max leverage limit
+            if (rawLot > maxAllowedLot) {
+                finalLot = maxAllowedLot;
+                isCapped = true;
+            }
+
+            // Calculate leverage for final lot
+            const finalNotionalJPY = finalLot * notionalValuePerLotInJPY;
+            const finalLeverage = finalNotionalJPY / balance;
+
+            // Calculate actual loss in JPY for final lot
+            const actualLossJPY = finalLot * pips * pipValuePerLotInJPY;
+
+            // Display Results
+            lotResult.textContent = finalLot.toFixed(2);
+            leverageResult.textContent = finalLeverage.toFixed(2);
+            lossResult.textContent = formatNumber(actualLossJPY);
+
+            // Split lot display for >= 100 lot
+            if (finalLot >= 100) {
+                const ordersCount = Math.ceil(finalLot / 100);
+                const perOrderLot = (finalLot / ordersCount).toFixed(2);
+                lotSplitNotice.textContent = `(${perOrderLot}lot × ${ordersCount})`;
+                lotSplitNotice.classList.remove('hidden');
+            } else {
+                lotSplitNotice.classList.add('hidden');
+            }
+
+            // Update UI for Leverage Warning & Lot Capping
+            if (isCapped) {
+                leverageContainer.className = "flex items-baseline gap-1 text-rose-500";
+                lotContainer.className = "flex items-baseline gap-1 text-rose-500";
+                leverageWarning.classList.remove('hidden');
+                if (lotCappedNotice) lotCappedNotice.classList.remove('hidden');
+            } else {
+                leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
+                lotContainer.className = "flex items-baseline gap-1 text-sky-600";
+                leverageWarning.classList.add('hidden');
+                if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
+            }
+        }
+
+        // Dropdown selection change event
+        currencySelect.addEventListener('change', (e) => {
+            selectedPair = e.target.value;
+            fetchCurrencyRate(selectedPair);
+        });
+
+        // Input Change Events
+        stopLossInput.addEventListener('input', calculateLot);
+        riskPercentInput.addEventListener('input', calculateLot);
+        balanceInput.addEventListener('input', calculateLot);
+        maxLeverageInput.addEventListener('input', calculateLot);
+
+        // Help Modal Events
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) helpModal.classList.add('hidden');
+        });
+
+        // Initial Initialization
+        window.addEventListener('load', () => {
+            fetchCurrencyRate(currencySelect.value);
+        });
+    </script>
+</body>
+</html>
