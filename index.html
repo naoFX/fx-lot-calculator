@@ -83,7 +83,7 @@
             </div>
             <div class="flex flex-col items-center">
                 <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">リスク%</label>
-                <input type="number" id="riskPercent" value="2.00" step="0.01"
+                <input type="number" id="riskPercent" value="2.0" step="0.1"
                     class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
             </div>
         </div>
@@ -254,16 +254,22 @@
                 if (saved) {
                     const settings = JSON.parse(saved);
                     if (settings.stopLoss !== undefined) stopLossInput.value = settings.stopLoss;
-                    if (settings.riskPercent !== undefined) riskPercentInput.value = settings.riskPercent;
+                    if (settings.riskPercent !== undefined) {
+                        const val = parseFloat(settings.riskPercent);
+                        riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
+                    }
                     if (settings.accountBalance !== undefined) balanceInput.value = settings.accountBalance;
                     if (settings.maxLeverage !== undefined) maxLeverageInput.value = settings.maxLeverage;
                     if (settings.currencyPair !== undefined) {
                         currencySelect.value = settings.currencyPair;
                         selectedPair = settings.currencyPair;
                     }
+                } else {
+                    riskPercentInput.value = "2.0";
                 }
             } catch (e) {
                 console.warn("Could not load settings from localStorage:", e);
+                riskPercentInput.value = "2.0";
             }
         }
 
@@ -340,11 +346,11 @@
                         if (pair === 'USD/JPY') {
                             fetchedPrice = rates['JPY'];
                         } else if (pair === 'EUR/USD') {
-                            fetchedPrice = rates['USD'] / rates['EUR'];
+                            fetchedPrice = rates['EUR'] ? (1 / rates['EUR']) : null;
                         } else if (pair === 'GBP/USD') {
-                            fetchedPrice = rates['USD'] / rates['GBP'];
+                            fetchedPrice = rates['GBP'] ? (1 / rates['GBP']) : null;
                         } else if (pair === 'AUD/USD') {
-                            fetchedPrice = rates['USD'] / rates['AUD'];
+                            fetchedPrice = rates['AUD'] ? (1 / rates['AUD']) : null;
                         }
                     }
                 }
@@ -369,15 +375,17 @@
                 }
             }
 
+            // Fallback to static base rate if API calls fail
+            if (!fetchedPrice && baseMarketRates[pair]) {
+                fetchedPrice = baseMarketRates[pair];
+            }
+
             if (fetchedPrice) {
                 ratesCache[pair] = fetchedPrice;
                 if (usdjpyRateFetched) ratesCache['usdjpy_rate'] = usdjpyRateFetched;
 
                 const decimals = pair === 'USD/JPY' ? 3 : 5;
-                // 初回読み込み時は手動変更値を尊重しつつ、空の場合のみレートを適用
-                if (!isInitialLoad || !basePriceInput.value) {
-                    basePriceInput.value = fetchedPrice.toFixed(decimals);
-                }
+                basePriceInput.value = fetchedPrice.toFixed(decimals);
                 updatedTimeDisplay.textContent = getFormattedDateTime();
             }
 
@@ -485,6 +493,12 @@
             saveSettings();
             showSaveStatus();
         };
+
+        riskPercentInput.addEventListener('blur', () => {
+            const val = parseFloat(riskPercentInput.value);
+            riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
+            handleInput();
+        });
 
         ['input', 'change', 'blur'].forEach(eventType => {
             stopLossInput.addEventListener(eventType, handleInput);
