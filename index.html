@@ -11,10 +11,8 @@
             theme: {
                 extend: {
                     colors: {
-                        appBg: '#222831',
-                        bluePrimary: '#38BDF8',
-                        bluePrimaryHover: '#0EA5E9',
-                        darkText: '#0F172A',
+                        skyPrimary: '#38BDF8',
+                        skyHover: '#0EA5E9',
                     },
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
@@ -25,18 +23,11 @@
     </script>
     <style>
         body {
-            background-color: #FFFFFF;
-            color: #0284C7;
+            background-color: #F8FAFC;
+            color: #0369A1;
             user-select: none;
             -webkit-user-select: none;
             font-family: 'Inter', 'Noto Sans JP', sans-serif;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
         }
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -58,18 +49,16 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-1.5 sm:p-6 antialiased bg-slate-100">
+<body class="min-h-screen flex flex-col items-center justify-center p-1.5 sm:p-6 antialiased">
 
-    <!-- App Main Container -->
+    <!-- Main Container -->
     <div class="w-full max-w-md bg-white flex flex-col items-center justify-between min-h-[92vh] sm:min-h-[95vh] py-5 px-3.5 sm:px-6 rounded-2xl sm:rounded-3xl relative border border-slate-200 shadow-xl">
         
-        <!-- Top Header -->
+        <!-- Header -->
         <div class="w-full text-center relative mb-4">
-            <!-- HELP Button -->
-            <button id="helpBtn" class="absolute left-0 top-0 border-2 border-sky-500 text-sky-600 bg-sky-50 rounded-full w-12 h-12 flex items-center justify-center text-xs font-bold hover:bg-sky-500 hover:text-white transition duration-200">
+            <button id="helpBtn" type="button" class="absolute left-0 top-0 border-2 border-sky-500 text-sky-600 bg-sky-50 rounded-full w-12 h-12 flex items-center justify-center text-xs font-bold hover:bg-sky-500 hover:text-white transition duration-200">
                 HELP
             </button>
-
             <h1 class="text-3xl font-extrabold tracking-tight text-sky-600">FX</h1>
             <p class="text-xl font-bold tracking-wide text-sky-600">ロット計算</p>
         </div>
@@ -77,41 +66,41 @@
         <!-- Inputs Row 1: Stop Loss & Risk % -->
         <div class="w-full grid grid-cols-2 gap-4 mb-4">
             <div class="flex flex-col items-center">
-                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">ストップ幅 (pips)</label>
+                <label for="stopLoss" class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">ストップ幅 (pips)</label>
                 <input type="number" id="stopLoss" value="20" step="any"
                     class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
             </div>
             <div class="flex flex-col items-center">
-                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">リスク%</label>
+                <label for="riskPercent" class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">リスク%</label>
                 <input type="number" id="riskPercent" value="2.0" step="0.1"
                     class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
             </div>
         </div>
 
         <!-- Inputs Row 2: Account Balance & Max Leverage -->
-        <div class="w-full grid grid-cols-3 gap-3 mb-5">
+        <div class="w-full grid grid-cols-3 gap-3 mb-4">
             <div class="col-span-2 flex flex-col items-center">
                 <div class="flex items-center gap-1 mb-1.5">
-                    <label class="text-xs sm:text-sm font-bold text-sky-700">証拠金 (円)</label>
-                    <span id="saveStatus" class="text-[10px] text-sky-600 font-semibold opacity-0 transition-opacity">保存完了</span>
+                    <label for="accountBalance" class="text-xs sm:text-sm font-bold text-sky-700">証拠金 (円)</label>
+                    <span id="saveStatus" class="text-[10px] text-sky-600 font-semibold opacity-0 transition-opacity duration-300">保存完了</span>
                 </div>
                 <input type="text" id="accountBalance" value="1,000,000"
                     class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
             </div>
             <div class="flex flex-col items-center">
-                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">最大レバ</label>
+                <label for="maxLeverage" class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">最大レバ</label>
                 <input type="number" id="maxLeverage" value="25" step="1" min="1"
                     class="w-full h-12 blue-box rounded-xl text-center font-bold text-xl outline-none focus:ring-2 focus:ring-sky-400 transition">
             </div>
         </div>
 
-        <!-- Live Price & Timestamp Info -->
+        <!-- Price & Timestamp -->
         <div class="w-full grid grid-cols-2 gap-4 mb-4">
             <div class="flex flex-col items-center">
                 <div class="flex items-center gap-1 mb-1.5">
-                    <label class="text-xs sm:text-sm font-bold text-sky-700">通貨ペア価格</label>
-                    <button id="refreshRateBtn" title="価格を更新" class="text-sky-500 hover:text-sky-700 active:scale-95 transition-transform duration-100">
-                        <svg id="refreshIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <label for="basePriceInput" class="text-xs sm:text-sm font-bold text-sky-700">通貨ペア価格</label>
+                    <button id="refreshRateBtn" type="button" title="価格を更新" class="text-sky-500 hover:text-sky-700 active:scale-95 transition duration-100">
+                        <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                     </button>
@@ -123,16 +112,16 @@
                 </div>
             </div>
             <div class="flex flex-col items-center">
-                <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">更新日時</label>
+                <span class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">更新日時</span>
                 <div class="w-full h-12 blue-border-box rounded-xl flex items-center justify-center font-medium text-xs sm:text-sm px-1 text-center" id="updatedTimeDisplay">
                     ----/--/-- --:--:--
                 </div>
             </div>
         </div>
 
-        <!-- Currency Pair Dropdown Selector -->
-        <div class="w-full my-2 flex flex-col items-center">
-            <label class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">通貨ペア選択</label>
+        <!-- Currency Selector -->
+        <div class="w-full mb-4 flex flex-col items-center">
+            <label for="currencySelect" class="text-xs sm:text-sm font-bold mb-1.5 text-sky-700">通貨ペア選択</label>
             <div class="relative w-full">
                 <select id="currencySelect" class="w-full h-12 blue-box rounded-xl px-4 text-center font-extrabold text-xl appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-sky-400 transition">
                     <option value="USD/JPY" class="bg-white text-sky-700 font-bold">USD/JPY</option>
@@ -140,17 +129,17 @@
                     <option value="GBP/USD" class="bg-white text-sky-700 font-bold">GBP/USD</option>
                     <option value="AUD/USD" class="bg-white text-sky-700 font-bold">AUD/USD</option>
                 </select>
-                <!-- Custom Dropdown Arrow -->
                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-sky-700">
-                    <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <svg class="fill-current h-6 w-6" viewBox="0 0 20 20">
                         <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
                     </svg>
                 </div>
             </div>
         </div>
 
-        <!-- Results Display Section -->
-        <div class="w-full px-2 space-y-3 my-4">
+        <!-- Calculation Results -->
+        <div class="w-full px-2 space-y-3 my-2">
+            <!-- Lot Size -->
             <div class="flex justify-between items-center text-xl font-bold">
                 <div class="flex flex-col">
                     <span class="text-sky-700">ロット数</span>
@@ -158,13 +147,15 @@
                 </div>
                 <div class="flex flex-col items-end">
                     <div class="flex items-baseline gap-0.5 text-sky-600" id="lotContainer">
-                        <span class="text-3xl font-extrabold tracking-tight transition-colors duration-200" id="lotInteger">10</span>
+                        <span class="text-3xl font-extrabold tracking-tight transition-colors duration-200" id="lotInteger">0</span>
                         <span class="text-base font-bold transition-colors duration-200" id="lotDecimal">.00</span>
                         <span class="text-base font-semibold ml-1">lot</span>
                     </div>
-                    <span class="text-xs font-semibold text-sky-600/80 hidden mt-0.5" id="lotSplitNotice">(70.00lot × 2)</span>
+                    <span class="text-xs font-semibold text-sky-600/80 hidden mt-0.5" id="lotSplitNotice"></span>
                 </div>
             </div>
+
+            <!-- Leverage -->
             <div class="flex justify-between items-center text-xl font-bold">
                 <span class="text-sky-700">レバレッジ</span>
                 <div class="flex flex-col items-end">
@@ -176,32 +167,25 @@
                 </div>
             </div>
 
-            <!-- Toggleable Required Margin Section -->
-            <div class="pt-1">
-                <button id="toggleMarginBtn" type="button" class="w-full flex items-center justify-between text-xs font-bold text-sky-600 hover:text-sky-800 bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200 transition">
-                    <span class="flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        必要証拠金を表示
-                    </span>
-                    <svg id="marginArrow" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
+            <!-- Required Margin Toggle Section -->
+            <div class="w-full pt-0.5 border-t border-sky-100">
+                <button id="toggleMarginBtn" type="button" class="w-full text-center py-0.5 text-xs font-bold text-sky-600 hover:text-sky-800 transition cursor-pointer flex items-center justify-center gap-1">
+                    <span id="marginToggleLabel">タップで必要証拠金を表示 💡</span>
                 </button>
-                <div id="marginDetailArea" class="hidden mt-1.5 p-2 bg-sky-50/70 border border-sky-100 rounded-lg flex justify-between items-center text-sm font-bold">
-                    <span class="text-sky-700">必要証拠金</span>
-                    <div class="flex items-baseline gap-0.5 text-sky-700">
-                        <span class="text-lg tracking-wider" id="requiredMarginResult">0</span>
+                <div id="requiredMarginContainer" class="hidden flex justify-between items-center text-lg font-bold mt-1 bg-sky-50 p-2 rounded-xl border border-sky-200">
+                    <span class="text-sky-700 text-sm">必要証拠金</span>
+                    <div class="flex items-baseline gap-1 text-sky-700">
+                        <span class="text-xl font-extrabold" id="requiredMarginResult">0</span>
                         <span class="text-xs font-semibold">円</span>
                     </div>
                 </div>
             </div>
 
+            <!-- Estimated Loss -->
             <div class="flex justify-between items-center text-xl font-bold">
                 <span class="text-sky-700">損失</span>
                 <div class="flex items-baseline gap-1 text-sky-600">
-                    <span class="text-2xl tracking-wider transition-colors duration-200" id="lossResult">20,000</span>
+                    <span class="text-2xl tracking-wider transition-colors duration-200" id="lossResult">0</span>
                     <span class="text-base font-semibold">円</span>
                 </div>
             </div>
@@ -216,348 +200,323 @@
             <div class="text-sm leading-relaxed space-y-2 text-slate-600">
                 <p><strong>【計算仕様（1ロット = 10,000通貨）】</strong></p>
                 <p><strong>・損失許容額（円）:</strong><br> 証拠金 × (リスク% ÷ 100)</p>
-                <p><strong>・1pipあたりの価値（1ロット）:</strong><br>
+                <p><strong>・1pipの価値（1ロット）:</strong><br>
                 - USD/JPY: 100円 (0.01 × 10,000)<br>
-                - XXX/USD: 1 USD × USD/JPYレート (0.0001 × 10,000 × 円換算レート)</p>
-                <p><strong>・ロット数算出:</strong><br> 許容損失額 ÷ (ストップ幅pips × 1pip価値)</p>
+                - 外貨ペア: 1 USD × USD/JPYレート (0.0001 × 10,000 × 円レート)</p>
+                <p><strong>・ロット数算出:</strong><br> 損失許容額 ÷ (ストップ幅pips × 1pip価値)</p>
             </div>
-            <button id="closeHelpBtn" class="w-full py-2.5 bg-sky-500 text-white font-bold rounded-xl mt-4 hover:bg-sky-600 transition">
+            <button id="closeHelpBtn" type="button" class="w-full py-2.5 bg-sky-500 text-white font-bold rounded-xl mt-4 hover:bg-sky-600 transition">
                 閉じる
             </button>
         </div>
     </div>
 
     <script>
-        // DOM Elements
-        const stopLossInput = document.getElementById('stopLoss');
-        const riskPercentInput = document.getElementById('riskPercent');
-        const balanceInput = document.getElementById('accountBalance');
-        const maxLeverageInput = document.getElementById('maxLeverage');
-        const basePriceInput = document.getElementById('basePriceInput');
-        const refreshRateBtn = document.getElementById('refreshRateBtn');
-        const refreshIcon = document.getElementById('refreshIcon');
-        const updatedTimeDisplay = document.getElementById('updatedTimeDisplay');
-        const lotInteger = document.getElementById('lotInteger');
-        const lotDecimal = document.getElementById('lotDecimal');
-        const lotContainer = document.getElementById('lotContainer');
-        const lotSplitNotice = document.getElementById('lotSplitNotice');
-        const lotCappedNotice = document.getElementById('lotCappedNotice');
-        const leverageResult = document.getElementById('leverageResult');
-        const leverageWarning = document.getElementById('leverageWarning');
-        const lossResult = document.getElementById('lossResult');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const helpBtn = document.getElementById('helpBtn');
-        const helpModal = document.getElementById('helpModal');
-        const closeHelpBtn = document.getElementById('closeHelpBtn');
-        const currencySelect = document.getElementById('currencySelect');
+        document.addEventListener('DOMContentLoaded', () => {
+            const stopLossInput = document.getElementById('stopLoss');
+            const riskPercentInput = document.getElementById('riskPercent');
+            const balanceInput = document.getElementById('accountBalance');
+            const maxLeverageInput = document.getElementById('maxLeverage');
+            const basePriceInput = document.getElementById('basePriceInput');
+            const refreshRateBtn = document.getElementById('refreshRateBtn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            const updatedTimeDisplay = document.getElementById('updatedTimeDisplay');
+            const lotInteger = document.getElementById('lotInteger');
+            const lotDecimal = document.getElementById('lotDecimal');
+            const lotContainer = document.getElementById('lotContainer');
+            const lotSplitNotice = document.getElementById('lotSplitNotice');
+            const lotCappedNotice = document.getElementById('lotCappedNotice');
+            const leverageResult = document.getElementById('leverageResult');
+            const leverageWarning = document.getElementById('leverageWarning');
+            const lossResult = document.getElementById('lossResult');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const helpBtn = document.getElementById('helpBtn');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelpBtn = document.getElementById('closeHelpBtn');
+            const currencySelect = document.getElementById('currencySelect');
+            const toggleMarginBtn = document.getElementById('toggleMarginBtn');
+            const marginToggleLabel = document.getElementById('marginToggleLabel');
+            const requiredMarginContainer = document.getElementById('requiredMarginContainer');
+            const requiredMarginResult = document.getElementById('requiredMarginResult');
+            const saveStatus = document.getElementById('saveStatus');
 
-        // Required Margin Elements
-        const toggleMarginBtn = document.getElementById('toggleMarginBtn');
-        const marginDetailArea = document.getElementById('marginDetailArea');
-        const marginArrow = document.getElementById('marginArrow');
-        const requiredMarginResult = document.getElementById('requiredMarginResult');
+            let selectedPair = 'USD/JPY';
+            let isMarginVisible = false;
 
-        let selectedPair = 'USD/JPY';
+            const STORAGE_KEY = 'fx_calculator_settings_v2';
 
-        // Local Storage Management
-        const STORAGE_KEY = 'fx_calculator_settings_v1';
+            const defaultRates = {
+                'USD/JPY': 157.890,
+                'EUR/USD': 1.11250,
+                'GBP/USD': 1.32750,
+                'AUD/USD': 0.70280,
+                'usdjpy_rate': 157.890
+            };
 
-        function saveSettings() {
-            try {
-                const settings = {
-                    stopLoss: stopLossInput.value,
-                    riskPercent: riskPercentInput.value,
-                    accountBalance: balanceInput.value,
-                    maxLeverage: maxLeverageInput.value,
-                    currencyPair: currencySelect.value
-                };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-            } catch (e) {
-                console.warn("Could not save settings to localStorage:", e);
+            const ratesCache = { ...defaultRates };
+
+            function formatNumber(num) {
+                return Math.round(num).toLocaleString('en-US');
             }
-        }
 
-        function loadSettings() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const settings = JSON.parse(saved);
-                    if (settings.stopLoss !== undefined) stopLossInput.value = settings.stopLoss;
-                    if (settings.riskPercent !== undefined) {
-                        const val = parseFloat(settings.riskPercent);
-                        riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
+            function parseFormattedNumber(val) {
+                if (!val) return 0;
+                return parseFloat(val.toString().replace(/,/g, '')) || 0;
+            }
+
+            function getFormattedDateTime() {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                return `${y}/${m}/${d} ${hh}:${mm}:${ss}`;
+            }
+
+            function saveSettings() {
+                try {
+                    const settings = {
+                        stopLoss: stopLossInput.value,
+                        riskPercent: riskPercentInput.value,
+                        accountBalance: balanceInput.value,
+                        maxLeverage: maxLeverageInput.value,
+                        currencyPair: currencySelect.value
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+                    if (saveStatus) {
+                        saveStatus.classList.remove('opacity-0');
+                        setTimeout(() => saveStatus.classList.add('opacity-0'), 1000);
                     }
-                    if (settings.accountBalance !== undefined) balanceInput.value = settings.accountBalance;
-                    if (settings.maxLeverage !== undefined) maxLeverageInput.value = settings.maxLeverage;
-                    if (settings.currencyPair !== undefined) {
-                        currencySelect.value = settings.currencyPair;
-                        selectedPair = settings.currencyPair;
+                } catch (e) {
+                    console.warn("LocalStorage save error:", e);
+                }
+            }
+
+            function loadSettings() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const settings = JSON.parse(saved);
+                        if (settings.stopLoss !== undefined) stopLossInput.value = settings.stopLoss;
+                        if (settings.riskPercent !== undefined) {
+                            const val = parseFloat(settings.riskPercent);
+                            riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
+                        } else {
+                            riskPercentInput.value = "2.0";
+                        }
+                        if (settings.accountBalance !== undefined) balanceInput.value = settings.accountBalance;
+                        if (settings.maxLeverage !== undefined) maxLeverageInput.value = settings.maxLeverage;
+                        if (settings.currencyPair !== undefined) {
+                            currencySelect.value = settings.currencyPair;
+                            selectedPair = settings.currencyPair;
+                        }
+                    } else {
+                        riskPercentInput.value = "2.0";
                     }
-                } else {
+                } catch (e) {
+                    console.warn("LocalStorage load error:", e);
                     riskPercentInput.value = "2.0";
                 }
-            } catch (e) {
-                console.warn("Could not load settings from localStorage:", e);
-                riskPercentInput.value = "2.0";
-            }
-        }
-
-        // Benchmark Real-time Base Rates
-        const baseMarketRates = {
-            'USD/JPY': 157.890,
-            'EUR/USD': 1.11250,
-            'GBP/USD': 1.32750,
-            'AUD/USD': 0.70280,
-            'usdjpy_rate': 157.890
-        };
-
-        // Current internal rate cache
-        const ratesCache = { ...baseMarketRates };
-
-        function formatNumber(num) {
-            return Math.round(num).toLocaleString('en-US');
-        }
-
-        function parseFormattedNumber(val) {
-            if (!val) return 0;
-            return parseFloat(val.toString().replace(/,/g, '')) || 0;
-        }
-
-        balanceInput.addEventListener('blur', () => {
-            const raw = parseFormattedNumber(balanceInput.value);
-            if (raw > 0) balanceInput.value = formatNumber(raw);
-            saveSettings();
-        });
-
-        balanceInput.addEventListener('focus', () => {
-            const raw = parseFormattedNumber(balanceInput.value);
-            if (raw > 0) balanceInput.value = raw.toString();
-        });
-
-        function showSaveStatus() {
-            const saveStatus = document.getElementById('saveStatus');
-            if (saveStatus) {
-                saveStatus.classList.remove('opacity-0');
-                setTimeout(() => {
-                    saveStatus.classList.add('opacity-0');
-                }, 1000);
-            }
-        }
-
-        function getFormattedDateTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-        }
-
-        // Real-time Live Market API Fetch
-        async function fetchCurrencyRate(pair, isInitialLoad = false) {
-            if (loadingSpinner) loadingSpinner.classList.remove('hidden');
-            if (refreshIcon) refreshIcon.classList.add('animate-spin');
-
-            let fetchedPrice = null;
-            let usdjpyRateFetched = null;
-
-            // Fetch live currency rates from primary & fallback endpoints
-            try {
-                const res = await fetch('https://open.er-api.com/v6/latest/USD');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.rates) {
-                        const rates = data.rates;
-                        usdjpyRateFetched = rates['JPY'];
-                        
-                        if (pair === 'USD/JPY') {
-                            fetchedPrice = rates['JPY'];
-                        } else if (pair === 'EUR/USD') {
-                            fetchedPrice = rates['EUR'] ? (1 / rates['EUR']) : null;
-                        } else if (pair === 'GBP/USD') {
-                            fetchedPrice = rates['GBP'] ? (1 / rates['GBP']) : null;
-                        } else if (pair === 'AUD/USD') {
-                            fetchedPrice = rates['AUD'] ? (1 / rates['AUD']) : null;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.warn("Primary API failed, trying fallback source", e);
             }
 
-            // Fallback API endpoint
-            if (!fetchedPrice) {
+            async function fetchCurrencyRate(pair) {
+                if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+                if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+                let fetchedPrice = null;
+                let usdjpyRateFetched = null;
+
                 try {
-                    const baseCurrency = pair.split('/')[0];
-                    const quoteCurrency = pair.split('/')[1];
-                    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${baseCurrency}`);
+                    const res = await fetch('https://open.er-api.com/v6/latest/USD');
                     if (res.ok) {
                         const data = await res.json();
-                        if (data && data.rates && data.rates[quoteCurrency]) {
-                            fetchedPrice = data.rates[quoteCurrency];
+                        if (data && data.rates) {
+                            usdjpyRateFetched = data.rates['JPY'];
+                            if (pair === 'USD/JPY') {
+                                fetchedPrice = data.rates['JPY'];
+                            } else if (pair === 'EUR/USD' && data.rates['EUR']) {
+                                fetchedPrice = 1 / data.rates['EUR'];
+                            } else if (pair === 'GBP/USD' && data.rates['GBP']) {
+                                fetchedPrice = 1 / data.rates['GBP'];
+                            } else if (pair === 'AUD/USD' && data.rates['AUD']) {
+                                fetchedPrice = 1 / data.rates['AUD'];
+                            }
                         }
                     }
                 } catch (e) {
-                    console.warn("Fallback API failed", e);
+                    console.warn("API fetch error, using robust fallback.", e);
+                }
+
+                if (!fetchedPrice && defaultRates[pair]) {
+                    fetchedPrice = defaultRates[pair];
+                }
+
+                if (fetchedPrice) {
+                    ratesCache[pair] = fetchedPrice;
+                    if (usdjpyRateFetched) ratesCache['usdjpy_rate'] = usdjpyRateFetched;
+
+                    const decimals = pair === 'USD/JPY' ? 3 : 5;
+                    basePriceInput.value = fetchedPrice.toFixed(decimals);
+                    updatedTimeDisplay.textContent = getFormattedDateTime();
+                }
+
+                if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+
+                calculateLot();
+            }
+
+            function calculateLot() {
+                const pips = parseFloat(stopLossInput.value) || 0;
+                const riskPct = parseFloat(riskPercentInput.value) || 0;
+                const balance = parseFormattedNumber(balanceInput.value);
+                const maxLev = parseFloat(maxLeverageInput.value) || 0;
+                const currentPrice = parseFloat(basePriceInput.value) || ratesCache[selectedPair] || 1.0;
+
+                if (pips <= 0 || riskPct <= 0 || balance <= 0 || currentPrice <= 0) {
+                    lotInteger.textContent = "0";
+                    lotDecimal.textContent = ".00";
+                    leverageResult.textContent = "0.00";
+                    lossResult.textContent = "0";
+                    requiredMarginResult.textContent = "0";
+                    leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
+                    lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
+                    leverageWarning.classList.add('hidden');
+                    if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
+                    if (lotSplitNotice) lotSplitNotice.classList.add('hidden');
+                    return;
+                }
+
+                ratesCache[selectedPair] = currentPrice;
+                const usdjpyRate = selectedPair === 'USD/JPY' ? currentPrice : (ratesCache['usdjpy_rate'] || defaultRates['usdjpy_rate']);
+
+                let pipValuePerLotInJPY = 100;
+                let notionalValuePerLotInJPY = 10000 * currentPrice;
+
+                if (selectedPair === 'USD/JPY') {
+                    pipValuePerLotInJPY = 100;
+                    notionalValuePerLotInJPY = 10000 * currentPrice;
+                } else {
+                    pipValuePerLotInJPY = 1 * usdjpyRate;
+                    notionalValuePerLotInJPY = 10000 * currentPrice * usdjpyRate;
+                }
+
+                const riskAmountJPY = balance * (riskPct / 100);
+                let rawLot = riskAmountJPY / (pips * pipValuePerLotInJPY);
+
+                let maxAllowedLot = Infinity;
+                if (maxLev > 0) {
+                    maxAllowedLot = (balance * maxLev) / notionalValuePerLotInJPY;
+                }
+
+                let isCapped = false;
+                let finalLot = rawLot;
+
+                if (rawLot > maxAllowedLot) {
+                    finalLot = maxAllowedLot;
+                    isCapped = true;
+                }
+
+                const finalNotionalJPY = finalLot * notionalValuePerLotInJPY;
+                const finalLeverage = finalNotionalJPY / balance;
+                const actualLossJPY = finalLot * pips * pipValuePerLotInJPY;
+                const reqMarginJPY = maxLev > 0 ? (finalNotionalJPY / maxLev) : 0;
+
+                const lotFormatted = finalLot.toFixed(2);
+                const lotParts = lotFormatted.split('.');
+                lotInteger.textContent = lotParts[0];
+                lotDecimal.textContent = '.' + (lotParts[1] || '00');
+
+                leverageResult.textContent = finalLeverage.toFixed(2);
+                lossResult.textContent = formatNumber(actualLossJPY);
+                requiredMarginResult.textContent = formatNumber(reqMarginJPY);
+
+                if (finalLot >= 100) {
+                    const ordersCount = Math.ceil(finalLot / 100);
+                    const perOrderLot = (finalLot / ordersCount).toFixed(2);
+                    lotSplitNotice.textContent = `(${perOrderLot}lot × ${ordersCount})`;
+                    lotSplitNotice.classList.remove('hidden');
+                } else {
+                    lotSplitNotice.classList.add('hidden');
+                }
+
+                if (isCapped) {
+                    leverageContainer.className = "flex items-baseline gap-1 text-rose-500";
+                    lotContainer.className = "flex items-baseline gap-0.5 text-rose-500";
+                    leverageWarning.classList.remove('hidden');
+                    if (lotCappedNotice) lotCappedNotice.classList.remove('hidden');
+                } else {
+                    leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
+                    lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
+                    leverageWarning.classList.add('hidden');
+                    if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
                 }
             }
 
-            // Fallback to static base rate if API calls fail
-            if (!fetchedPrice && baseMarketRates[pair]) {
-                fetchedPrice = baseMarketRates[pair];
-            }
+            // Event Listeners
+            currencySelect.addEventListener('change', (e) => {
+                selectedPair = e.target.value;
+                saveSettings();
+                fetchCurrencyRate(selectedPair);
+            });
 
-            if (fetchedPrice) {
-                ratesCache[pair] = fetchedPrice;
-                if (usdjpyRateFetched) ratesCache['usdjpy_rate'] = usdjpyRateFetched;
+            const handleInput = () => {
+                calculateLot();
+                saveSettings();
+            };
 
-                const decimals = pair === 'USD/JPY' ? 3 : 5;
-                basePriceInput.value = fetchedPrice.toFixed(decimals);
-                updatedTimeDisplay.textContent = getFormattedDateTime();
-            }
+            riskPercentInput.addEventListener('blur', () => {
+                const val = parseFloat(riskPercentInput.value);
+                riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
+                handleInput();
+            });
 
-            if (loadingSpinner) loadingSpinner.classList.add('hidden');
-            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            balanceInput.addEventListener('blur', () => {
+                const raw = parseFormattedNumber(balanceInput.value);
+                if (raw > 0) balanceInput.value = formatNumber(raw);
+                handleInput();
+            });
 
-            calculateLot();
-        }
+            balanceInput.addEventListener('focus', () => {
+                const raw = parseFormattedNumber(balanceInput.value);
+                if (raw > 0) balanceInput.value = raw.toString();
+            });
 
-        function calculateLot() {
-            const pips = parseFloat(stopLossInput.value) || 0;
-            const riskPct = parseFloat(riskPercentInput.value) || 0;
-            const balance = parseFormattedNumber(balanceInput.value);
-            const maxLev = parseFloat(maxLeverageInput.value) || 0;
-            const currentPrice = parseFloat(basePriceInput.value) || ratesCache[selectedPair] || 1.0;
+            ['input', 'change'].forEach(evt => {
+                stopLossInput.addEventListener(evt, handleInput);
+                riskPercentInput.addEventListener(evt, handleInput);
+                balanceInput.addEventListener(evt, handleInput);
+                maxLeverageInput.addEventListener(evt, handleInput);
+                basePriceInput.addEventListener(evt, handleInput);
+            });
 
-            if (pips <= 0 || riskPct <= 0 || balance <= 0 || currentPrice <= 0) {
-                lotInteger.textContent = "0";
-                lotDecimal.textContent = ".00";
-                leverageResult.textContent = "0.00";
-                lossResult.textContent = "0";
-                requiredMarginResult.textContent = "0";
-                leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
-                lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
-                leverageWarning.classList.add('hidden');
-                if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
-                if (lotSplitNotice) lotSplitNotice.classList.add('hidden');
-                return;
-            }
+            refreshRateBtn.addEventListener('click', () => {
+                fetchCurrencyRate(selectedPair);
+            });
 
-            ratesCache[selectedPair] = currentPrice;
-            const usdjpyRate = selectedPair === 'USD/JPY' ? currentPrice : (ratesCache['usdjpy_rate'] || baseMarketRates['usdjpy_rate']);
+            toggleMarginBtn.addEventListener('click', () => {
+                isMarginVisible = !isMarginVisible;
+                if (isMarginVisible) {
+                    requiredMarginContainer.classList.remove('hidden');
+                    marginToggleLabel.textContent = '必要証拠金を非表示 💡';
+                } else {
+                    requiredMarginContainer.classList.add('hidden');
+                    marginToggleLabel.textContent = 'タップで必要証拠金を表示 💡';
+                }
+            });
 
-            let pipValuePerLotInJPY = 100; 
-            let notionalValuePerLotInJPY = 10000 * currentPrice; 
+            helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+            closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) helpModal.classList.add('hidden');
+            });
 
-            if (selectedPair === 'USD/JPY') {
-                pipValuePerLotInJPY = 100;
-                notionalValuePerLotInJPY = 10000 * currentPrice;
-            } else {
-                pipValuePerLotInJPY = 1 * usdjpyRate;
-                notionalValuePerLotInJPY = 10000 * currentPrice * usdjpyRate;
-            }
-
-            const riskAmountJPY = balance * (riskPct / 100);
-            let rawLot = riskAmountJPY / (pips * pipValuePerLotInJPY);
-
-            let maxAllowedLot = Infinity;
-            if (maxLev > 0) {
-                maxAllowedLot = (balance * maxLev) / notionalValuePerLotInJPY;
-            }
-
-            let isCapped = false;
-            let finalLot = rawLot;
-
-            if (rawLot > maxAllowedLot) {
-                finalLot = maxAllowedLot;
-                isCapped = true;
-            }
-
-            const finalNotionalJPY = finalLot * notionalValuePerLotInJPY;
-            const finalLeverage = finalNotionalJPY / balance;
-            const actualLossJPY = finalLot * pips * pipValuePerLotInJPY;
-
-            // Required Margin Calculation (Max Leverage)
-            const requiredMarginJPY = maxLev > 0 ? (finalNotionalJPY / maxLev) : 0;
-            requiredMarginResult.textContent = formatNumber(requiredMarginJPY);
-
-            const lotFormatted = finalLot.toFixed(2);
-            const lotParts = lotFormatted.split('.');
-            lotInteger.textContent = lotParts[0];
-            lotDecimal.textContent = '.' + (lotParts[1] || '00');
-
-            leverageResult.textContent = finalLeverage.toFixed(2);
-            lossResult.textContent = formatNumber(actualLossJPY);
-
-            // Split lot display for >= 100 lot
-            if (finalLot >= 100) {
-                const ordersCount = Math.ceil(finalLot / 100);
-                const perOrderLot = (finalLot / ordersCount).toFixed(2);
-                lotSplitNotice.textContent = `(${perOrderLot}lot × ${ordersCount})`;
-                lotSplitNotice.classList.remove('hidden');
-            } else {
-                lotSplitNotice.classList.add('hidden');
-            }
-
-            if (isCapped) {
-                leverageContainer.className = "flex items-baseline gap-1 text-rose-500";
-                lotContainer.className = "flex items-baseline gap-0.5 text-rose-500";
-                leverageWarning.classList.remove('hidden');
-                if (lotCappedNotice) lotCappedNotice.classList.remove('hidden');
-            } else {
-                leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
-                lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
-                leverageWarning.classList.add('hidden');
-                if (lotCappedNotice) lotCappedNotice.classList.add('hidden');
-            }
-        }
-
-        // Event Listeners for Live Calculation & Immediate Auto-save
-        currencySelect.addEventListener('change', (e) => {
-            selectedPair = e.target.value;
-            saveSettings();
-            showSaveStatus();
-            fetchCurrencyRate(selectedPair);
+            // Initialize App
+            loadSettings();
+            fetchCurrencyRate(currencySelect.value);
         });
-
-        const handleInput = () => {
-            calculateLot();
-            saveSettings();
-            showSaveStatus();
-        };
-
-        riskPercentInput.addEventListener('blur', () => {
-            const val = parseFloat(riskPercentInput.value);
-            riskPercentInput.value = isNaN(val) ? "2.0" : val.toFixed(1);
-            handleInput();
-        });
-
-        ['input', 'change', 'blur'].forEach(eventType => {
-            stopLossInput.addEventListener(eventType, handleInput);
-            riskPercentInput.addEventListener(eventType, handleInput);
-            balanceInput.addEventListener(eventType, handleInput);
-            maxLeverageInput.addEventListener(eventType, handleInput);
-            basePriceInput.addEventListener(eventType, handleInput);
-        });
-
-        refreshRateBtn.addEventListener('click', () => {
-            fetchCurrencyRate(selectedPair);
-        });
-
-        // Toggle Required Margin Visibility
-        toggleMarginBtn.addEventListener('click', () => {
-            const isHidden = marginDetailArea.classList.contains('hidden');
-            if (isHidden) {
-                marginDetailArea.classList.remove('hidden');
-                marginArrow.classList.add('rotate-180');
-            } else {
-                marginDetailArea.classList.add('hidden');
-                marginArrow.classList.remove('rotate-180');
-            }
-        });
-
-        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
-        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
-<!-- ... existing code -->
+    </script>
+</body>
+</html>
