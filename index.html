@@ -175,6 +175,29 @@
                     <span class="text-xs text-rose-500 font-bold hidden" id="leverageWarning">⚠️ 最大レバに制限中</span>
                 </div>
             </div>
+
+            <!-- Toggleable Required Margin Section -->
+            <div class="pt-1">
+                <button id="toggleMarginBtn" type="button" class="w-full flex items-center justify-between text-xs font-bold text-sky-600 hover:text-sky-800 bg-sky-50 px-2.5 py-1.5 rounded-lg border border-sky-200 transition">
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        必要証拠金を表示
+                    </span>
+                    <svg id="marginArrow" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="marginDetailArea" class="hidden mt-1.5 p-2 bg-sky-50/70 border border-sky-100 rounded-lg flex justify-between items-center text-sm font-bold">
+                    <span class="text-sky-700">必要証拠金</span>
+                    <div class="flex items-baseline gap-0.5 text-sky-700">
+                        <span class="text-lg tracking-wider" id="requiredMarginResult">0</span>
+                        <span class="text-xs font-semibold">円</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex justify-between items-center text-xl font-bold">
                 <span class="text-sky-700">損失</span>
                 <div class="flex items-baseline gap-1 text-sky-600">
@@ -227,6 +250,12 @@
         const helpModal = document.getElementById('helpModal');
         const closeHelpBtn = document.getElementById('closeHelpBtn');
         const currencySelect = document.getElementById('currencySelect');
+
+        // Required Margin Elements
+        const toggleMarginBtn = document.getElementById('toggleMarginBtn');
+        const marginDetailArea = document.getElementById('marginDetailArea');
+        const marginArrow = document.getElementById('marginArrow');
+        const requiredMarginResult = document.getElementById('requiredMarginResult');
 
         let selectedPair = 'USD/JPY';
 
@@ -407,6 +436,7 @@
                 lotDecimal.textContent = ".00";
                 leverageResult.textContent = "0.00";
                 lossResult.textContent = "0";
+                requiredMarginResult.textContent = "0";
                 leverageContainer.className = "flex items-baseline gap-1 text-sky-600";
                 lotContainer.className = "flex items-baseline gap-0.5 text-sky-600";
                 leverageWarning.classList.add('hidden');
@@ -448,6 +478,10 @@
             const finalNotionalJPY = finalLot * notionalValuePerLotInJPY;
             const finalLeverage = finalNotionalJPY / balance;
             const actualLossJPY = finalLot * pips * pipValuePerLotInJPY;
+
+            // Required Margin Calculation (Max Leverage)
+            const requiredMarginJPY = maxLev > 0 ? (finalNotionalJPY / maxLev) : 0;
+            requiredMarginResult.textContent = formatNumber(requiredMarginJPY);
 
             const lotFormatted = finalLot.toFixed(2);
             const lotParts = lotFormatted.split('.');
@@ -512,17 +546,18 @@
             fetchCurrencyRate(selectedPair);
         });
 
-        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
-        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
-        helpModal.addEventListener('click', (e) => {
-            if (e.target === helpModal) helpModal.classList.add('hidden');
+        // Toggle Required Margin Visibility
+        toggleMarginBtn.addEventListener('click', () => {
+            const isHidden = marginDetailArea.classList.contains('hidden');
+            if (isHidden) {
+                marginDetailArea.classList.remove('hidden');
+                marginArrow.classList.add('rotate-180');
+            } else {
+                marginDetailArea.classList.add('hidden');
+                marginArrow.classList.remove('rotate-180');
+            }
         });
 
-        // Initial Initialization on Load
-        window.addEventListener('load', () => {
-            loadSettings();
-            fetchCurrencyRate(currencySelect.value, true);
-        });
-    </script>
-</body>
-</html>
+        helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+<!-- ... existing code -->
