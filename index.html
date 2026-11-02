@@ -168,11 +168,11 @@
             </div>
 
             <!-- Required Margin Toggle Section -->
-            <div class="w-full pt-0.5 border-t border-sky-100">
-                <button id="toggleMarginBtn" type="button" class="w-full text-center py-0.5 text-xs font-bold text-sky-600 hover:text-sky-800 transition cursor-pointer flex items-center justify-center gap-1">
+            <div class="w-full pt-0.5 border-t border-sky-100/60 my-0.5" id="marginWrapper">
+                <button id="toggleMarginBtn" type="button" class="w-full text-center py-0 text-[10px] sm:text-xs font-bold text-sky-600/80 hover:text-sky-800 transition cursor-pointer flex items-center justify-center gap-1 leading-none">
                     <span id="marginToggleLabel">タップで必要証拠金を表示 💡</span>
                 </button>
-                <div id="requiredMarginContainer" class="hidden flex justify-between items-center text-lg font-bold mt-1 bg-sky-50 p-2 rounded-xl border border-sky-200">
+                <div id="requiredMarginContainer" class="hidden flex justify-between items-center text-lg font-bold mt-1.5 bg-sky-50 p-2 rounded-xl border border-sky-200">
                     <span class="text-sky-700 text-sm">必要証拠金</span>
                     <div class="flex items-baseline gap-1 text-sky-700">
                         <span class="text-xl font-extrabold" id="requiredMarginResult">0</span>
@@ -246,11 +246,11 @@
             const STORAGE_KEY = 'fx_calculator_settings_v2';
 
             const defaultRates = {
-                'USD/JPY': 155.200,
-                'EUR/USD': 1.08500,
-                'GBP/USD': 1.29500,
-                'AUD/USD': 0.65800,
-                'usdjpy_rate': 155.200
+                'USD/JPY': 157.890,
+                'EUR/USD': 1.11250,
+                'GBP/USD': 1.32750,
+                'AUD/USD': 0.70280,
+                'usdjpy_rate': 157.890
             };
 
             const ratesCache = { ...defaultRates };
@@ -327,55 +327,36 @@
 
                 let fetchedPrice = null;
 
-                try {
-                    // リアルタイム為替レートAPI (ExchangeRate API)
-                    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD?t=${Date.now()}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.rates) {
-                            const rates = data.rates;
-                            if (rates['JPY']) ratesCache['usdjpy_rate'] = rates['JPY'];
-
-                            if (pair === 'USD/JPY' && rates['JPY']) {
-                                fetchedPrice = rates['JPY'];
-                            } else if (pair === 'EUR/USD' && rates['EUR']) {
-                                fetchedPrice = 1 / rates['EUR'];
-                            } else if (pair === 'GBP/USD' && rates['GBP']) {
-                                fetchedPrice = 1 / rates['GBP'];
-                            } else if (pair === 'AUD/USD' && rates['AUD']) {
-                                fetchedPrice = 1 / rates['AUD'];
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn("API fetch error, trying secondary source...", e);
-                }
-
-                // セカンダリリアルタイムフィード（Open Free Rates API）
-                if (!fetchedPrice) {
+                // Helper function to fetch price from Twelve Data or fallback to open.er-api
+                async function getRate(symbol) {
                     try {
-                        const res2 = await fetch(`https://open.er-api.com/v6/latest/USD`);
-                        if (res2.ok) {
-                            const data2 = await res2.json();
-                            if (data2 && data2.rates) {
-                                const rates2 = data2.rates;
-                                if (rates2['JPY']) ratesCache['usdjpy_rate'] = rates2['JPY'];
-
-                                if (pair === 'USD/JPY' && rates2['JPY']) {
-                                    fetchedPrice = rates2['JPY'];
-                                } else if (pair === 'EUR/USD' && rates2['EUR']) {
-                                    fetchedPrice = 1 / rates2['EUR'];
-                                } else if (pair === 'GBP/USD' && rates2['GBP']) {
-                                    fetchedPrice = 1 / rates2['GBP'];
-                                } else if (pair === 'AUD/USD' && rates2['AUD']) {
-                                    fetchedPrice = 1 / rates2['AUD'];
-                                }
+                        const res = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=demo`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.price && !isNaN(parseFloat(data.price))) {
+                                return parseFloat(data.price);
                             }
                         }
-                    } catch (err) {
-                        console.warn("Secondary API error", err);
-                    }
+                    } catch (e) {}
+
+                    // Backup fetch if Twelve Data free demo rate fails for specific symbol
+                    try {
+                        const backupRes = await fetch('https://open.er-api.com/v6/latest/USD');
+                        if (backupRes.ok) {
+                            const data = await backupRes.json();
+                            if (data && data.rates) {
+                                if (symbol === 'USD/JPY') return data.rates['JPY'];
+                                if (symbol === 'EUR/USD' && data.rates['EUR']) return 1 / data.rates['EUR'];
+                                if (symbol === 'GBP/USD' && data.rates['GBP']) return 1 / data.rates['GBP'];
+                                if (symbol === 'AUD/USD' && data.rates['AUD']) return 1 / data.rates['AUD'];
+                            }
+                        }
+                    } catch (e) {}
+
+                    return null;
                 }
+
+                fetchedPrice = await getRate(pair);
 
                 if (!fetchedPrice && defaultRates[pair]) {
                     fetchedPrice = defaultRates[pair];
@@ -383,6 +364,14 @@
 
                 if (fetchedPrice) {
                     ratesCache[pair] = fetchedPrice;
+                    
+                    if (pair !== 'USD/JPY') {
+                        const usdjpyRate = await getRate('USD/JPY');
+                        ratesCache['usdjpy_rate'] = usdjpyRate || defaultRates['usdjpy_rate'];
+                    } else {
+                        ratesCache['usdjpy_rate'] = fetchedPrice;
+                    }
+
                     const decimals = pair === 'USD/JPY' ? 3 : 5;
                     basePriceInput.value = fetchedPrice.toFixed(decimals);
                     updatedTimeDisplay.textContent = getFormattedDateTime();
