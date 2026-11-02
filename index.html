@@ -326,23 +326,13 @@
                 if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
                 let fetchedPrice = null;
-                let usdjpyRateFetched = null;
 
                 try {
-                    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                    const res = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(pair)}&apikey=demo`);
                     if (res.ok) {
                         const data = await res.json();
-                        if (data && data.rates) {
-                            usdjpyRateFetched = data.rates['JPY'];
-                            if (pair === 'USD/JPY') {
-                                fetchedPrice = data.rates['JPY'];
-                            } else if (pair === 'EUR/USD' && data.rates['EUR']) {
-                                fetchedPrice = 1 / data.rates['EUR'];
-                            } else if (pair === 'GBP/USD' && data.rates['GBP']) {
-                                fetchedPrice = 1 / data.rates['GBP'];
-                            } else if (pair === 'AUD/USD' && data.rates['AUD']) {
-                                fetchedPrice = 1 / data.rates['AUD'];
-                            }
+                        if (data && data.price) {
+                            fetchedPrice = parseFloat(data.price);
                         }
                     }
                 } catch (e) {
@@ -355,7 +345,20 @@
 
                 if (fetchedPrice) {
                     ratesCache[pair] = fetchedPrice;
-                    if (usdjpyRateFetched) ratesCache['usdjpy_rate'] = usdjpyRateFetched;
+                    
+                    if (pair !== 'USD/JPY') {
+                        try {
+                            const resUsdJpy = await fetch(`https://api.twelvedata.com/price?symbol=USD/JPY&apikey=demo`);
+                            if (resUsdJpy.ok) {
+                                const dataUsdJpy = await resUsdJpy.json();
+                                if (dataUsdJpy && dataUsdJpy.price) {
+                                    ratesCache['usdjpy_rate'] = parseFloat(dataUsdJpy.price);
+                                }
+                            }
+                        } catch (e) {}
+                    } else {
+                        ratesCache['usdjpy_rate'] = fetchedPrice;
+                    }
 
                     const decimals = pair === 'USD/JPY' ? 3 : 5;
                     basePriceInput.value = fetchedPrice.toFixed(decimals);
